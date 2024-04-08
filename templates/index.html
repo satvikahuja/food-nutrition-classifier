@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Menu Scanning</title>
+    <!-- Add Bootstrap CDN for styling -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body, html {
+            height: 100%; /* Full height */
+            margin: 0;
+            /* Gradient background */
+            background: linear-gradient(to right, #6dd5ed, #2193b0);
+            color: #fff; /* White text for better contrast */
+        }
+        .video-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+        .video-feed {
+            border-radius: 10px;
+            border: 5px solid #fff; /* White border for the video */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Shadow for depth */
+            margin-top: 20px; /* Spacing between title and video feed */
+        }
+        h1 {
+            margin-bottom: 0.5em; /* Spacing below the title */
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <h1>Digital Nutrition Scanning</h1>
+        <img src="{{ url_for('video') }}" class="video-feed" width="50%"/>
+    </div>
+    <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
