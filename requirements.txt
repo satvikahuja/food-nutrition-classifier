@@ -1,4 +1,4 @@
 Flask
 opencv-python
 torch
-ultralytics=8.1.37
+ultralytics
