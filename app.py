@@ -3,7 +3,7 @@ import cv2
 import torch
 from ultralytics import YOLO
 
-app = Flask(__name__)
+application = Flask(__name__)
 
 # Load the YOLOv8 model with your custom weights
 weights_path = 'runs/detect/yolov8m_v8_50bigfood150/weights/best.pt'
