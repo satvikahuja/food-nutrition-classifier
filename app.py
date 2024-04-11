@@ -3,7 +3,7 @@ import cv2
 import torch
 from ultralytics import YOLO
 
-application = Flask(__name__)
+app = Flask(__name__)
 
 # Load the YOLOv8 model with your custom weights
 weights_path = 'runs/detect/yolov8m_v8_50bigfood150/weights/best.pt'
@@ -93,13 +93,13 @@ def generate_frames():
         yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' +
                bytearray(encodedImage) + b'\r\n')
 
-@application.route('/')
+@app.route('/')
 def index():
     return render_template('index.html')
 
-@application.route('/video')
+@app.route('/video')
 def video():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    application.run(debug=True, threaded=True)
+    app.run(debug=True, threaded=True)
