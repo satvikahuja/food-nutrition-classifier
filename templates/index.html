@@ -49,6 +49,35 @@
         socket.on('connect', () => {
             console.log('Socket connected!');
         });
+        async function initCameraAndSendFrames() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoElement.srcObject = stream;
+        videoElement.addEventListener('play', sendFrame);
+    } catch (error) {
+        console.error("Error accessing the camera", error);
+    }
+}
+
+// Send frames to the server for processing
+function sendFrame() {
+    if (videoElement.paused || videoElement.ended) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            socket.emit('image', { image: reader.result });
+        };
+        reader.readAsDataURL(blob);
+    }, 'image/jpeg');
+}
+
+// Trigger the camera access and start sending frames
+initCameraAndSendFrames();
 
         socket.on('response', data => {
             console.log("Received processed frame from server.");
