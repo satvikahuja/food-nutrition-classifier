@@ -10,10 +10,11 @@ import io
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Load the YOLOv8 model with your custom weights
+# Load the YOLOv8 model with your custom weights1
 weights_path = 'runs/detect/yolov8m_v8_50bigfood150/weights/best.pt'
 model = YOLO(weights_path)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 model.to(device)
 
 nutritional_info = {
