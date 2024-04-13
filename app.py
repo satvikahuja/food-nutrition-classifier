@@ -19,7 +19,12 @@ model.to(device)
 
 # Define the nutritional information, colors, and class types
 nutritional_info = {
-    # Your nutritional info dictionary
+    'burger': 'Calories: 540, Protein: 34g',
+    'chapati': 'Calories: 240, Protein: 6.2g',
+    'dal_makhni': 'Calories: 427, Protein: 24gg',
+    'pizza': 'Calories: 570, Protein: 24g',
+    'samosa': 'Calories: 261, Protein: 3.5g',
+    'kadai_paneer': 'Calories: 302, Protein: 12.3g'
 }
 green_box_color = (0, 255, 0)
 red_box_color = (0, 0, 255)
