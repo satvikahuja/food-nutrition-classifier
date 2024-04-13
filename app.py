@@ -1,7 +1,10 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request, jsonify
 import cv2
 import torch
 from ultralytics import YOLO
+import numpy as np
+from PIL import Image
+import io
 
 app = Flask(__name__)
 
@@ -18,8 +21,7 @@ else:
 model.to(device)
 
 # Initialize video stream
-camera = cv2.VideoCapture(0)  # Replace 0 with the correct video source if needed
-# Attempt to set the resolution to 1920x1080 for high-resolution capture
+# camera = cv2.VideoCapture(0)  # Replace 0 with the correct video source if needed
 
 nutritional_info = {
     'burger': 'Calories: 540, Protein: 34g',
@@ -38,68 +40,51 @@ text_color = (255, 255, 255)
 green_classes = ['dal_makhni', 'kadai_paneer', 'chapati']
 red_classes = ['pizza', 'samosa', 'burger']
 
-def generate_frames():
-    while True:
-        # Capture frame-by-frame
-        ret, frame = camera.read()
-        if not ret:
-            break
+@app.route('/process_frame', methods=['POST'])
+def process_frame():
+    image_file = request.files['frame'].read()  # Get the image file
+    nparr = np.frombuffer(image_file, np.uint8)  # Convert string to numpy array
+    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Decode numpy array to opencv image
 
-        # Perform inference
-        results = model(frame)
+    # Perform inference using YOLO
+    results = model(frame)
 
-        # Process detections
-        for det in results[0].boxes:
-            # Access the bounding box coordinates directly from the tensor
-            if det.xyxy.numel() >= 4:  # Ensure there are at least 4 elements
-                coords = det.xyxy[0].tolist()  # Assuming the first element has the bbox coords
-                x1, y1, x2, y2 = [int(coord) for coord in coords[:4]]  # Convert to integer if they are not already
-            else:
-                print("Bounding box coordinates not found")
-                continue  # Skip the rest of the loop if coordinates are not found
-
-            # Get the confidence and class index
+    # Process detections and draw bounding boxes and text
+    for det in results[0].boxes:
+        if det.xyxy.numel() >= 4:
+            coords = det.xyxy[0].tolist()
+            x1, y1, x2, y2 = [int(coord) for coord in coords[:4]]
             conf = det.conf.item()
             class_index = det.cls.item()
             class_name = model.names[int(class_index)]
 
-            # Choose color based on class name
-            if class_name in green_classes:
-                box_color = green_box_color
-            elif class_name in red_classes:
-                box_color = red_box_color
-            else:
-                continue
+            # Choose color based on class
+            box_color = green_box_color if class_name in green_classes else red_box_color
 
-                # Draw the bounding box
-            cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 6)
+            # Draw the bounding box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 2)
 
-                # Prepare and put the text
+            # Prepare and put the text
             text = f'{class_name}: {conf:.2f}'
-            cv2.putText(frame, text, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 1, text_color, 2)
+            cv2.putText(frame, text, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
 
-                # Add nutritional info if class_name is in the dictionary
+            # Add nutritional info if class_name is in the dictionary
             if class_name in nutritional_info:
                 info_text = nutritional_info[class_name]
-                cv2.putText(frame, info_text, (x1, y2 + 40), cv2.FONT_HERSHEY_SIMPLEX, .75, text_color, 2)
+                cv2.putText(frame, info_text, (x1, y2 + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
 
+    # Encode the modified frame
+    ret, buffer = cv2.imencode('.jpg', frame)
+    if not ret:
+        return jsonify({'error': 'Could not encode image.'}), 500
 
-        # Encode the frame in JPEG format
-        (flag, encodedImage) = cv2.imencode(".jpg", frame)
-        if not flag:
-            continue
-
-        # Yield the output frame in byte format
-        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' +
-               bytearray(encodedImage) + b'\r\n')
+    # Convert to byte array and return as a response
+    frame_bytes = buffer.tobytes()
+    return Response(frame_bytes, mimetype='image/jpeg')
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/video')
-def video():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-#update new
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, host="0.0.0.0", port=5000)
