@@ -16,7 +16,6 @@ model = YOLO(weights_path)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# Define the nutritional information, colors, and class types
 nutritional_info = {
     'burger': 'Calories: 540, Protein: 34g',
     'chapati': 'Calories: 240, Protein: 6.2g',
@@ -35,9 +34,10 @@ red_classes = ['pizza', 'samosa', 'burger']
 def index():
     return render_template('index.html')
 
-@socketio.on('image')
+
 @socketio.on('image')
 def handle_image(data):
+    print("Received image from client.")
     try:
         # Decode the image from base64
         image_data = base64.b64decode(data['image'].split(',')[1])
@@ -62,21 +62,23 @@ def handle_image(data):
 
             # Prepare and put the text
             text = f'{class_name}: {conf:.2f}'
-            cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
+            cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
 
             # Add nutritional info if class_name is in the dictionary
             if class_name in nutritional_info:
                 info_text = nutritional_info[class_name]
-                cv2.putText(frame, info_text, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
+                cv2.putText(frame, info_text, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
 
         # Encode the modified frame back to JPEG format
         _, buffer = cv2.imencode('.jpg', frame)
         frame_data = base64.b64encode(buffer).decode('utf-8')
 
         # Emit the processed image back to the client
+        print("Emitting the processed frame.")
         emit('response', {'image': f'data:image/jpeg;base64,{frame_data}'})
     except Exception as e:
-        print(f'An error occurred: {e}')
+        print(f'An error occurred while processing the image: {e}')
+
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000,allow_unsafe_werkzeug=True)
