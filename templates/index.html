@@ -34,6 +34,8 @@
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
+        <!-- Add this video element to your existing HTML -->
+        <video id="videoFeed" autoplay playsinline style="display:none;"></video>
         <img id="processedImage" width="640" height="480" />
     </div>
     <!-- Load Socket.IO -->
@@ -43,41 +45,41 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
+        const videoElement = document.getElementById('videoFeed');
         const processedImage = document.getElementById('processedImage');
         const socket = io.connect(location.origin);
 
         socket.on('connect', () => {
             console.log('Socket connected!');
         });
-        async function initCameraAndSendFrames() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoElement.srcObject = stream;
-        videoElement.addEventListener('play', sendFrame);
-    } catch (error) {
-        console.error("Error accessing the camera", error);
-    }
-}
+       async function initCameraAndSendFrames() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoElement.srcObject = stream;
+                videoElement.addEventListener('play', sendFrame);
+            } catch (error) {
+                console.error("Error accessing the camera", error);
+            }
+        }
 
 // Send frames to the server for processing
 function sendFrame() {
-    if (videoElement.paused || videoElement.ended) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-    const context = canvas.getContext('2d');
-    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(blob => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            socket.emit('image', { image: reader.result });
-        };
-        reader.readAsDataURL(blob);
-    }, 'image/jpeg');
-}
+            if (videoElement.paused || videoElement.ended) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    socket.emit('image', { image: reader.result });
+                };
+                reader.readAsDataURL(blob);
+            }, 'image/jpeg');
+        }
 
-// Trigger the camera access and start sending frames
-initCameraAndSendFrames();
+        initCameraAndSendFrames();
 
         socket.on('response', data => {
             console.log("Received processed frame from server.");
