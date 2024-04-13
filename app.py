@@ -8,7 +8,7 @@ import base64
 import io
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Load the YOLOv8 model with your custom weights
 weights_path = 'runs/detect/yolov8m_v8_50bigfood150/weights/best.pt'
