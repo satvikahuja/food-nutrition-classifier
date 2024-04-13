@@ -6,3 +6,5 @@ pillow==10.3.0
 requests==2.31.0
 torch==2.2.2
 ultralytics==8.1.45
+Flask-CORS==3.0.10
+flask-socketio==5.3.6
