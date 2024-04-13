@@ -20,7 +20,7 @@
             align-items: center;
             height: 100%;
         }
-        #videoFeed, #processedImage {
+        #processedImage {
             border-radius: 10px;
             border: 5px solid #fff;
             box-shadow: 0 8px 16px rgba(0,0,0,0.2);
@@ -29,20 +29,12 @@
         h1 {
             margin-bottom: 0.5em;
         }
-        #cameraError {
-            color: red;
-            display: none;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
-        <video id="videoFeed" width="640" height="480" autoplay playsinline></video>
-        <img id="processedImage" style="display:none;" width="640" height="480"/>
-        <!-- Error message container -->
-        <div id="cameraError">Camera error: <span id="cameraErrorMessage"></span></div>
+        <img id="processedImage" width="640" height="480"/>
     </div>
     <!-- Load Socket.IO -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
@@ -51,10 +43,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        const videoElement = document.getElementById('videoFeed');
         const processedImage = document.getElementById('processedImage');
-        const cameraErrorContainer = document.getElementById('cameraError');
-        const cameraErrorMessage = document.getElementById('cameraErrorMessage');
         const socket = io.connect(location.origin);
 
         // Set event listeners for Socket.IO
@@ -63,51 +52,9 @@
         });
 
         socket.on('response', data => {
+            // Update the 'src' of the 'img' element with the processed image received from the server
             processedImage.src = data.image;
-            processedImage.style.display = 'block';
         });
-
-        // Access webcam
-        async function initCamera() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.error("Browser API navigator.mediaDevices.getUserMedia not available");
-                cameraErrorMessage.textContent = "Camera not available.";
-                cameraErrorContainer.style.display = 'block';
-                return;
-            }
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                videoElement.srcObject = stream;
-                cameraErrorContainer.style.display = 'none'; // Hide error if successful
-            } catch (error) {
-                console.error("Error accessing the camera", error);
-                cameraErrorMessage.textContent = error.message; // Set the error message text
-                cameraErrorContainer.style.display = 'block'; // Show the error message
-            }
-        }
-
-        initCamera();
-
-        // Send frames to the server
-        function sendFrame() {
-            if (videoElement.paused || videoElement.ended) return;
-            const canvas = document.createElement('canvas');
-            canvas.width = videoElement.videoWidth;
-            canvas.height = videoElement.videoHeight;
-            const context = canvas.getContext('2d');
-            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob(blob => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    socket.emit('image', { image: reader.result });
-                };
-                reader.readAsDataURL(blob);
-            }, 'image/jpeg');
-        }
-
-        // Start sending frames every 100ms
-        setInterval(sendFrame, 100);
     </script>
 </body>
 </html>
