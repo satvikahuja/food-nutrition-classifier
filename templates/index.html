@@ -34,7 +34,6 @@
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
-        <!-- Hidden video element for capturing the camera feed -->
         <video id="videoFeed" autoplay playsinline style="display: none;"></video>
         <img id="processedImage" width="640" height="480" />
     </div>
@@ -45,59 +44,94 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        const videoElement = document.getElementById('videoFeed');
+        let videoElement = document.getElementById('videoFeed');
         const processedImage = document.getElementById('processedImage');
         const socket = io.connect(location.origin);
 
         socket.on('connect', () => {
-            console.log('Socket connected!');
-            // Initialize camera and begin sending frames here
-            initCameraAndSendFrames();
-        });
+    console.log('Socket connected!');
+    initCameraAndSendFrames();
+});
+
 
         socket.on('response', data => {
-            console.log("Received processed frame from server.");
-            console.log(data.image); // Log the full data URL
-            processedImage.src = data.image; // Update the image source to the data URL
-            processedImage.onload = () => {
-                console.log("Processed image displayed successfully.");
-            };
-            processedImage.onerror = (e) => {
-                console.error("Error loading processed image:", e);
-            };
-        });
+    var base64Data = data.image.replace(/^data:image\/jpeg;base64,/, "");
+    var blob = base64ToBlob(base64Data, 'image/jpeg');
+    var imageUrl = URL.createObjectURL(blob);
+    processedImage.src = imageUrl;
+    processedImage.onload = () => {
+    URL.revokeObjectURL(processedImage.src); // Free memory
+};
 
-        // Function to initialize camera and send frames
-        async function initCameraAndSendFrames() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                videoElement.srcObject = stream;
-                videoElement.addEventListener('play', sendFrame);
-            } catch (error) {
-                console.error("Error accessing the camera", error);
-            }
+});
+
+
+async function initCameraAndSendFrames() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoElement = document.createElement('video');
+        videoElement.srcObject = stream;
+        videoElement.play();
+        // Omit appending the videoElement to the body if it's hidden
+        sendFrame(); // Start sending frames after the video begins playing
+    } catch (error) {
+        console.error("Error accessing the camera", error);
+    }
+}
+function base64ToBlob(base64, mime)
+{
+    mime = mime || '';
+    var sliceSize = 1024;
+    var byteChars = window.atob(base64);
+    var byteArrays = [];
+
+    for (var offset = 0, len = byteChars.length; offset < len; offset += sliceSize) {
+        var slice = byteChars.slice(offset, offset + sliceSize);
+
+        var byteNumbers = new Array(slice.length);
+        for (var i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
         }
 
-        // Function to send frames to the server
-        function sendFrame() {
-            if (videoElement.paused || videoElement.ended) return;
-            const canvas = document.createElement('canvas');
-            canvas.width = videoElement.videoWidth;
-            canvas.height = videoElement.videoHeight;
-            const context = canvas.getContext('2d');
-            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob(blob => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    socket.emit('image', { image: reader.result });
-                };
-                reader.readAsDataURL(blob);
-            }, 'image/jpeg');
-        }
-        
-        // Invoke the function to start the process
+        var byteArray = new Uint8Array(byteNumbers);
+
+        byteArrays.push(byteArray);
+    }
+
+    return new Blob(byteArrays, {type: mime});
+}
+
+
+function sendFrame() {
+    if (!videoElement || videoElement.paused || videoElement.ended) {
+        // If the video is not playing, stop the loop.
+        return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+
+    const context = canvas.getContext('2d');
+    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+    // Convert the canvas frame to a data URL and send it to the server
+    const dataURL = canvas.toDataURL('image/jpeg');
+    socket.emit('image', { image: dataURL });
+
+    // Instead of requestAnimationFrame, use setTimeout to control the frame rate
+    setTimeout(sendFrame, 500); // Adjust delay as needed, 1000ms = 1 second
+}
+
+// Start the frame sending process after a delay
+setTimeout(sendFrame, 500);
+
+// Start the frame sending process immediately
+requestAnimationFrame(sendFrame);
+
+
+        // Kick off the process
         initCameraAndSendFrames();
-
     </script>
 </body>
 </html>
