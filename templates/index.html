@@ -120,11 +120,11 @@ function sendFrame() {
     socket.emit('image', { image: dataURL });
 
     // Instead of requestAnimationFrame, use setTimeout to control the frame rate
-    setTimeout(sendFrame, 800); // Adjust delay as needed, 1000ms = 1 second
+    setTimeout(sendFrame, 400); // Adjust delay as needed, 1000ms = 1 second
 }
 
 // Start the frame sending process after a delay
-setTimeout(sendFrame, 800);
+setTimeout(sendFrame, 400);
 
 // Start the frame sending process immediately
 requestAnimationFrame(sendFrame);
