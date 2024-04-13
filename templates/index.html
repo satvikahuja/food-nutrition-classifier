@@ -21,9 +21,9 @@
             align-items: center;
             height: 100%;
         }
-        .video-feed, #processedImage {
+        .video-feed, .processed-image {
             border-radius: 10px;
-            border: 5px solid #fff; /* White border for the video and processed image */
+            border: 5px solid #fff; /* White border for the video */
             box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Shadow for depth */
             margin-top: 20px; /* Spacing between title and video feed */
         }
@@ -40,7 +40,7 @@
         <h1>Digital Nutrition Scanning</h1>
         <video id="videoFeed" class="video-feed" width="640" height="480" autoplay playsinline></video>
         <button id="captureButton" class="btn btn-primary">Capture Frame</button>
-        <img id="processedImage" width="640" height="480" style="display:none;" />
+        <img id="processedImage" class="processed-image" width="640" height="480" style="display:none;" />
     </div>
     <!-- Bootstrap JS, and jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -51,7 +51,6 @@
         const captureButton = document.getElementById('captureButton');
         const processedImage = document.getElementById('processedImage');
 
-        // Prompt user to grant access to the camera
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(function(stream) {
                 videoElement.srcObject = stream;
