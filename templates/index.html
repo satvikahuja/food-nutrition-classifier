@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Menu Scanning</title>
+    <title>Digital Nutrition Scanning</title>
     <!-- Bootstrap CDN for styling -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
@@ -34,7 +34,7 @@
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
-        <img id="processedImage" width="640" height="480"/>
+        <img id="processedImage" width="640" height="480" />
     </div>
     <!-- Load Socket.IO -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
@@ -53,11 +53,16 @@
         socket.on('response', data => {
             console.log("Received processed frame from server.");
             processedImage.src = data.image + "?t=" + new Date().getTime();
-            processedImage.style.display = 'block'; // Make sure to display the image
+            console.log("Processed image updated.");
         });
 
-        // No need to initialize the camera or send frames from the client
-        // since the server is handling the video capture and processing
+        socket.on('disconnect', () => {
+            console.log('Socket disconnected!');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+        });
     </script>
 </body>
 </html>
