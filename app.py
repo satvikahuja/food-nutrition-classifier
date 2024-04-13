@@ -48,17 +48,30 @@ def handle_image(data):
         results = model(frame)
 
         # Process detections and draw bounding boxes and text
-        for det in results.xyxy[0]:
+        for det in results[0].boxes:
             # Access the bounding box coordinates directly from the tensor
-            x1, y1, x2, y2, conf, class_index = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4].item(), det[
-                5].item()
+            if det.xyxy.numel() >= 4:  # Ensure there are at least 4 elements
+                coords = det.xyxy[0].tolist()  # Assuming the first element has the bbox coords
+                x1, y1, x2, y2 = [int(coord) for coord in coords[:4]]  # Convert to integer if they are not already
+            else:
+                print("Bounding box coordinates not found")
+                continue  # Skip the rest of the loop if coordinates are not found
+
+            # Get the confidence and class index
+            conf = det.conf.item()
+            class_index = det.cls.item()
             class_name = model.names[int(class_index)]
 
-            # Choose color based on class
-            box_color = green_box_color if class_name in green_classes else red_box_color
+            # Choose color based on class name
+            if class_name in green_classes:
+                box_color = green_box_color
+            elif class_name in red_classes:
+                box_color = red_box_color
+            else:
+                continue
 
-            # Draw the bounding box
-            cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 2)
+                # Draw the bounding box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 6)
 
             # Prepare and put the text
             text = f'{class_name}: {conf:.2f}'
