@@ -4,7 +4,6 @@ import cv2
 import torch
 from ultralytics import YOLO
 import numpy as np
-from PIL import Image
 import base64
 import io
 
@@ -37,22 +36,22 @@ def index():
     return render_template('index.html')
 
 @socketio.on('image')
+@socketio.on('image')
 def handle_image(data):
-    # Decode the image from base64
-    image_data = base64.b64decode(data['image'].split(',')[1])
-    nparr = np.frombuffer(image_data, np.uint8)
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    try:
+        # Decode the image from base64
+        image_data = base64.b64decode(data['image'].split(',')[1])
+        nparr = np.frombuffer(image_data, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-    # Perform inference using YOLO
-    results = model(frame)
+        # Perform inference using YOLO
+        results = model(frame)
 
-    # Process detections and draw bounding boxes and text
-    for det in results[0].boxes:
-        if det.xyxy.numel() >= 4:
-            coords = det.xyxy[0].tolist()
-            x1, y1, x2, y2 = [int(coord) for coord in coords[:4]]
-            conf = det.conf.item()
-            class_index = det.cls.item()
+        # Process detections and draw bounding boxes and text
+        for det in results.xyxy[0]:
+            # Access the bounding box coordinates directly from the tensor
+            x1, y1, x2, y2, conf, class_index = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4].item(), det[
+                5].item()
             class_name = model.names[int(class_index)]
 
             # Choose color based on class
@@ -63,17 +62,21 @@ def handle_image(data):
 
             # Prepare and put the text
             text = f'{class_name}: {conf:.2f}'
-            cv2.putText(frame, text, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
+            cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
 
             # Add nutritional info if class_name is in the dictionary
             if class_name in nutritional_info:
                 info_text = nutritional_info[class_name]
-                cv2.putText(frame, info_text, (x1, y2 + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
+                cv2.putText(frame, info_text, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
 
-    # Encode the modified frame
-    _, buffer = cv2.imencode('.jpg', frame)
-    frame_data = base64.b64encode(buffer).decode('utf-8')
-    emit('response', {'image': f'data:image/jpeg;base64,{frame_data}'})
+        # Encode the modified frame back to JPEG format
+        _, buffer = cv2.imencode('.jpg', frame)
+        frame_data = base64.b64encode(buffer).decode('utf-8')
+
+        # Emit the processed image back to the client
+        emit('response', {'image': f'data:image/jpeg;base64,{frame_data}'})
+    except Exception as e:
+        print(f'An error occurred: {e}')
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
