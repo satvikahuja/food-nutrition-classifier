@@ -1,28 +1,23 @@
-from flask import Flask, render_template, Response, request, jsonify
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
 import cv2
 import torch
 from ultralytics import YOLO
 import numpy as np
 from PIL import Image
+import base64
 import io
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Load the YOLOv8 model with your custom weights
 weights_path = 'runs/detect/yolov8m_v8_50bigfood150/weights/best.pt'
 model = YOLO(weights_path)
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-elif torch.cuda.is_available():
-    device = torch.device("cuda")
-else:
-    device = torch.device("cpu")
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# Initialize video stream
-# camera = cv2.VideoCapture(0)  # Replace 0 with the correct video source if needed
-
+# Define the nutritional information, colors, and class types
 nutritional_info = {
     'burger': 'Calories: 540, Protein: 34g',
     'chapati': 'Calories: 240, Protein: 6.2g',
@@ -30,21 +25,23 @@ nutritional_info = {
     'pizza': 'Calories: 570, Protein: 24g',
     'samosa': 'Calories: 261, Protein: 3.5g',
     'kadai_paneer': 'Calories: 302, Protein: 12.3g'
-    # ... other food items
 }
-
 green_box_color = (0, 255, 0)
 red_box_color = (0, 0, 255)
 text_color = (255, 255, 255)
-
 green_classes = ['dal_makhni', 'kadai_paneer', 'chapati']
 red_classes = ['pizza', 'samosa', 'burger']
 
-@app.route('/process_frame', methods=['POST'])
-def process_frame():
-    image_file = request.files['frame'].read()  # Get the image file
-    nparr = np.frombuffer(image_file, np.uint8)  # Convert string to numpy array
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Decode numpy array to opencv image
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@socketio.on('image')
+def handle_image(data):
+    # Decode the image from base64
+    image_data = base64.b64decode(data['image'].split(',')[1])
+    nparr = np.frombuffer(image_data, np.uint8)
+    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     # Perform inference using YOLO
     results = model(frame)
@@ -74,17 +71,9 @@ def process_frame():
                 cv2.putText(frame, info_text, (x1, y2 + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
 
     # Encode the modified frame
-    ret, buffer = cv2.imencode('.jpg', frame)
-    if not ret:
-        return jsonify({'error': 'Could not encode image.'}), 500
-
-    # Convert to byte array and return as a response
-    frame_bytes = buffer.tobytes()
-    return Response(frame_bytes, mimetype='image/jpeg')
-
-@app.route('/')
-def index():
-    return render_template('index.html')
+    _, buffer = cv2.imencode('.jpg', frame)
+    frame_data = base64.b64encode(buffer).decode('utf-8')
+    emit('response', {'image': f'data:image/jpeg;base64,{frame_data}'})
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True, host="0.0.0.0", port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
