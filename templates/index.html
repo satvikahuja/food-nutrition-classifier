@@ -69,16 +69,25 @@
 
         // Access webcam
         async function initCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error("Browser API navigator.mediaDevices.getUserMedia not available");
+                cameraErrorMessage.textContent = "Camera not available.";
+                cameraErrorContainer.style.display = 'block';
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 videoElement.srcObject = stream;
-                cameraErrorContainer.style.display = 'none';  // Hide error if successful
+                cameraErrorContainer.style.display = 'none'; // Hide error if successful
             } catch (error) {
                 console.error("Error accessing the camera", error);
                 cameraErrorMessage.textContent = error.message; // Set the error message text
-                cameraErrorContainer.style.display = 'block';   // Show the error message
+                cameraErrorContainer.style.display = 'block'; // Show the error message
             }
         }
+
+        initCamera();
 
         // Send frames to the server
         function sendFrame() {
@@ -96,8 +105,6 @@
                 reader.readAsDataURL(blob);
             }, 'image/jpeg');
         }
-
-        initCamera();
 
         // Start sending frames every 100ms
         setInterval(sendFrame, 100);
