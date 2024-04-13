@@ -84,11 +84,12 @@ def handle_image(data):
 
         # Encode the modified frame back to JPEG format
         _, buffer = cv2.imencode('.jpg', frame)
-        frame_data = base64.b64encode(buffer).decode('utf-8')
+
+        frame_data = base64.b64encode(buffer).decode('utf-8').replace('\n', '').replace('\r', '')
 
         # Emit the processed image back to the client
         print("Emitting the processed frame.")
-        emit('response', {'image': f'data:image/jpeg;base64,{frame_data}'})
+        emit('response', {'image': 'data:image/jpeg;base64,' + frame_data})
     except Exception as e:
         print(f'An error occurred while processing the image: {e}')
 
