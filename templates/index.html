@@ -34,7 +34,6 @@
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
-        <!-- Only the processed image will be displayed here -->
         <img id="processedImage" width="640" height="480"/>
     </div>
     <!-- Load Socket.IO -->
@@ -47,15 +46,14 @@
         const processedImage = document.getElementById('processedImage');
         const socket = io.connect(location.origin);
 
-        // Set event listeners for Socket.IO
         socket.on('connect', () => {
             console.log('Socket connected!');
         });
 
         socket.on('response', data => {
-            // Update the 'src' of the 'img' element with the processed image received from the server
+            console.log("Received processed frame from server.");
             processedImage.src = data.image + "?t=" + new Date().getTime();
-            // The addition of "?t=" with the current time ensures the browser always fetches the latest frame
+            processedImage.style.display = 'block'; // Make sure to display the image
         });
 
         // No need to initialize the camera or send frames from the client
