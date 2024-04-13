@@ -29,17 +29,13 @@
         h1 {
             margin-bottom: 0.5em;
         }
-        /* Hide the video element used to capture the camera feed */
-        #videoFeed {
-            display: none;
-        }
     </style>
 </head>
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
         <!-- Hidden video element for capturing the camera feed -->
-        <video id="videoFeed" autoplay playsinline></video>
+        <video id="videoFeed" autoplay playsinline style="display: none;"></video>
         <img id="processedImage" width="640" height="480" />
     </div>
     <!-- Load Socket.IO -->
@@ -53,59 +49,55 @@
         const processedImage = document.getElementById('processedImage');
         const socket = io.connect(location.origin);
 
-        // Set up the event listeners for Socket.IO
         socket.on('connect', () => {
             console.log('Socket connected!');
+            // Initialize camera and begin sending frames here
             initCameraAndSendFrames();
         });
 
         socket.on('response', data => {
             console.log("Received processed frame from server.");
-            processedImage.src = data.image + "?t=" + new Date().getTime();
+            console.log(data.image); // Log the full data URL
+            processedImage.src = data.image; // Update the image source to the data URL
+            processedImage.onload = () => {
+                console.log("Processed image displayed successfully.");
+            };
+            processedImage.onerror = (e) => {
+                console.error("Error loading processed image:", e);
+            };
         });
 
-        socket.on('disconnect', () => {
-            console.log('Socket disconnected!');
-        });
-
-        socket.on('connect_error', (error) => {
-            console.error('Connection error:', error);
-        });
-
+        // Function to initialize camera and send frames
         async function initCameraAndSendFrames() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 videoElement.srcObject = stream;
-                // Wait for the video to start playing to get the correct dimensions
-                videoElement.onloadedmetadata = () => {
-                    sendFrame();
-                };
+                videoElement.addEventListener('play', sendFrame);
             } catch (error) {
                 console.error("Error accessing the camera", error);
             }
         }
 
+        // Function to send frames to the server
         function sendFrame() {
+            if (videoElement.paused || videoElement.ended) return;
             const canvas = document.createElement('canvas');
             canvas.width = videoElement.videoWidth;
             canvas.height = videoElement.videoHeight;
             const context = canvas.getContext('2d');
-
-            // Continuously capture frames from the video element
-            const captureFrame = () => {
-                context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob(blob => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        socket.emit('image', { image: reader.result });
-                    };
-                    reader.readAsDataURL(blob);
-                }, 'image/jpeg');
-            };
-
-            // Send frames every 100 milliseconds
-            setInterval(captureFrame, 100);
+            context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    socket.emit('image', { image: reader.result });
+                };
+                reader.readAsDataURL(blob);
+            }, 'image/jpeg');
         }
+        
+        // Invoke the function to start the process
+        initCameraAndSendFrames();
+
     </script>
 </body>
 </html>
