@@ -29,6 +29,11 @@
         h1 {
             margin-bottom: 0.5em;
         }
+        #cameraError {
+            color: red;
+            display: none;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -36,6 +41,8 @@
         <h1>Digital Nutrition Scanning</h1>
         <video id="videoFeed" width="640" height="480" autoplay playsinline></video>
         <img id="processedImage" style="display:none;" width="640" height="480"/>
+        <!-- Error message container -->
+        <div id="cameraError">Camera error: <span id="cameraErrorMessage"></span></div>
     </div>
     <!-- Load Socket.IO -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
@@ -46,6 +53,8 @@
     <script>
         const videoElement = document.getElementById('videoFeed');
         const processedImage = document.getElementById('processedImage');
+        const cameraErrorContainer = document.getElementById('cameraError');
+        const cameraErrorMessage = document.getElementById('cameraErrorMessage');
         const socket = io.connect(location.origin);
 
         // Set event listeners for Socket.IO
@@ -63,8 +72,11 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 videoElement.srcObject = stream;
+                cameraErrorContainer.style.display = 'none';  // Hide error if successful
             } catch (error) {
                 console.error("Error accessing the camera", error);
+                cameraErrorMessage.textContent = error.message; // Set the error message text
+                cameraErrorContainer.style.display = 'block';   // Show the error message
             }
         }
 
