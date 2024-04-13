@@ -30,26 +30,24 @@
         h1 {
             margin-bottom: 0.5em; /* Spacing below the title */
         }
-        #captureButton {
-            margin-top: 20px;
-        }
     </style>
 </head>
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
-        <video id="videoFeed" class="video-feed" width="640" height="480" autoplay playsinline></video>
-        <button id="captureButton" class="btn btn-primary">Capture Frame</button>
-        <img id="processedImage" class="processed-image" width="640" height="480" style="display:none;" />
+        <video id="videoFeed" class="video-feed" autoplay playsinline></video>
+        <img id="processedImage" class="processed-image" style="display:none;" />
     </div>
+    <!-- Load Socket.IO -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <!-- Bootstrap JS, and jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         const videoElement = document.getElementById('videoFeed');
-        const captureButton = document.getElementById('captureButton');
         const processedImage = document.getElementById('processedImage');
+        const socket = io();
 
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(function(stream) {
@@ -59,27 +57,29 @@
                 console.error("Error accessing the camera", error);
             });
 
-        captureButton.addEventListener('click', function() {
+        function sendFrame() {
             const canvas = document.createElement('canvas');
             canvas.width = videoElement.videoWidth;
             canvas.height = videoElement.videoHeight;
             const context = canvas.getContext('2d');
             context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
             canvas.toBlob(function(blob) {
-                const formData = new FormData();
-                formData.append('frame', blob, 'frame.jpg');
-                fetch('/process_frame', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.blob())
-                .then(blob => {
-                    processedImage.src = URL.createObjectURL(blob);
-                    processedImage.style.display = 'block'; // Show the processed image
-                })
-                .catch(err => console.error("Error processing frame", err));
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const dataURL = reader.result;
+                    socket.emit('image', { image: dataURL });
+                };
+                reader.readAsDataURL(blob);
             }, 'image/jpeg');
+        }
+
+        // Continuously send frames every 100 milliseconds
+        setInterval(sendFrame, 100);
+
+        // Receive processed image from server
+        socket.on('response', function(data) {
+            processedImage.src = data.image;
+            processedImage.style.display = 'block';
         });
     </script>
 </body>
