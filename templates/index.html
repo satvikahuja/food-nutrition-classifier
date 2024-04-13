@@ -8,11 +8,10 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body, html {
-            height: 100%; /* Full height */
+            height: 100%;
             margin: 0;
-            /* Gradient background */
             background: linear-gradient(to right, #6dd5ed, #2193b0);
-            color: #fff; /* White text for better contrast */
+            color: #fff;
         }
         .video-container {
             display: flex;
@@ -21,22 +20,22 @@
             align-items: center;
             height: 100%;
         }
-        .video-feed, .processed-image {
+        #videoFeed, #processedImage {
             border-radius: 10px;
-            border: 5px solid #fff; /* White border for the video */
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Shadow for depth */
-            margin-top: 20px; /* Spacing between title and video feed */
+            border: 5px solid #fff;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            margin-top: 20px;
         }
         h1 {
-            margin-bottom: 0.5em; /* Spacing below the title */
+            margin-bottom: 0.5em;
         }
     </style>
 </head>
 <body>
     <div class="video-container">
         <h1>Digital Nutrition Scanning</h1>
-        <video id="videoFeed" class="video-feed" autoplay playsinline></video>
-        <img id="processedImage" class="processed-image" style="display:none;" />
+        <video id="videoFeed" width="640" height="480" autoplay playsinline></video>
+        <img id="processedImage" style="display:none;" width="640" height="480"/>
     </div>
     <!-- Load Socket.IO -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
@@ -47,40 +46,49 @@
     <script>
         const videoElement = document.getElementById('videoFeed');
         const processedImage = document.getElementById('processedImage');
-        const socket = io();
+        const socket = io.connect(location.origin);
 
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(function(stream) {
+        // Set event listeners for Socket.IO
+        socket.on('connect', () => {
+            console.log('Socket connected!');
+        });
+
+        socket.on('response', data => {
+            processedImage.src = data.image;
+            processedImage.style.display = 'block';
+        });
+
+        // Access webcam
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 videoElement.srcObject = stream;
-            })
-            .catch(function(error) {
+            } catch (error) {
                 console.error("Error accessing the camera", error);
-            });
+            }
+        }
 
+        // Send frames to the server
         function sendFrame() {
+            if (videoElement.paused || videoElement.ended) return;
             const canvas = document.createElement('canvas');
             canvas.width = videoElement.videoWidth;
             canvas.height = videoElement.videoHeight;
             const context = canvas.getContext('2d');
             context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob(function(blob) {
+            canvas.toBlob(blob => {
                 const reader = new FileReader();
-                reader.onload = function() {
-                    const dataURL = reader.result;
-                    socket.emit('image', { image: dataURL });
+                reader.onloadend = () => {
+                    socket.emit('image', { image: reader.result });
                 };
                 reader.readAsDataURL(blob);
             }, 'image/jpeg');
         }
 
-        // Continuously send frames every 100 milliseconds
-        setInterval(sendFrame, 100);
+        initCamera();
 
-        // Receive processed image from server
-        socket.on('response', function(data) {
-            processedImage.src = data.image;
-            processedImage.style.display = 'block';
-        });
+        // Start sending frames every 100ms
+        setInterval(sendFrame, 100);
     </script>
 </body>
 </html>
