@@ -27,8 +27,8 @@ This project uses YOLOv8m to detect various food dishes in images and provides n
 1. Clone the repository:
 2. Install the required Python libraries:
 3. Configure AWS credentials (if not already done):
+<img width="519" alt="Screenshot 2024-04-26 at 11 42 48 PM" src="https://github.com/satvikahuja/food-nutrition-classifier/assets/109898261/8a223e38-62ec-4af0-9029-ed5d8a924310">
 <img width="444" alt="Screenshot 2024-04-26 at 11 43 08 PM" src="https://github.com/satvikahuja/food-nutrition-classifier/assets/109898261/0f23e5e3-3040-4fc6-b77e-e524f9dea464">
- <img width="519" alt="Screenshot 2024-04-26 at 11 42 48 PM" src="https://github.com/satvikahuja/food-nutrition-classifier/assets/109898261/8a223e38-62ec-4af0-9029-ed5d8a924310">
 
 ### Deployment
 1. Log into your AWS EC2 instance:
