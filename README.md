@@ -1,7 +1,7 @@
 # Food Detection and Nutritional Info Project
 
 ## Overview
-This project uses YOLOv8m to detect various food dishes in images and provides nutritional information for each detected item. The system is deployed on an AWS EC2 instance, offering an accessible API for integration into various applications.
+This project uses YOLOv8m to detect various food dishes in images and provides nutritional information for each detected item. The system is deployed on an AWS EC2 instance, offering an accessible API for integration into various applications
 
 ## Features
 - **Food Detection**: Automatically detect and label different food items in an image.
