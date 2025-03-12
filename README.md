@@ -6,7 +6,6 @@ This project uses YOLOv8m to detect various food dishes in images and provides n
 ## Features
 - **Food Detection**: Automatically detect and label different food items in an image.
 - **Nutritional Information**: Display nutritional content (e.g., calories, fats, proteins) next to the detected food.
-- **API Access**: Provides a RESTful API for easy integration with other applications.
 
 ## Technology Stack
 - **Model**: YOLOv8m for object detection.
